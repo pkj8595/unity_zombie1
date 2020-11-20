@@ -46,21 +46,52 @@ public class PlayerHealth : LivingEntity {
     public override void RestoreHealth(float newHealth) {
         // LivingEntity의 RestoreHealth() 실행 (체력 증가)
         base.RestoreHealth(newHealth);
+        healthSlider.value = health;
     }
 
     // 데미지 처리
     public override void OnDamage(float damage, Vector3 hitPoint, Vector3 hitDirection) {
+        if (!dead)
+        {
+            playerAudioPlayer.PlayOneShot(hitClip);
+        }
         // LivingEntity의 OnDamage() 실행(데미지 적용)
         base.OnDamage(damage, hitPoint, hitDirection);
+        //갱신된 체력을 체력 슬라이더에 반영
+        healthSlider.value = health;
+
     }
 
     // 사망 처리
     public override void Die() {
         // LivingEntity의 Die() 실행(사망 적용)
         base.Die();
+        //체력슬라이더 비활성화
+        healthSlider.gameObject.SetActive(false);
+
+        //사망음 재생
+        playerAudioPlayer.PlayOneShot(deathClip);
+        //사망 애니메이션 실행
+        playerAnimator.SetTrigger("Die");
+
+        //플레이어 조작을 받는 컴포넌트 비활성화
+        playerMovement.enabled = false;
+        playerShooter.enabled = false;
     }
 
     private void OnTriggerEnter(Collider other) {
         // 아이템과 충돌한 경우 해당 아이템을 사용하는 처리
+        if (!dead)
+        {
+            //충돌한 오브젝트로부터 IITem 인터페이스 컴포넌트 가져오기 시도
+            IItem item = other.GetComponent<IItem>();
+            if (item != null)
+            {
+                //Use 메서드를 실행하여 아이템 사용(gameObject == player)
+                item.Use(gameObject);
+                //아이템 획득 사운드 재생
+                playerAudioPlayer.PlayOneShot(itemPickupClip);
+            }
+        }
     }
 }

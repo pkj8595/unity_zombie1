@@ -39,10 +39,22 @@ public class Enemy : LivingEntity {
 
     private void Awake() {
         // 초기화
+        pathFinder = GetComponent<NavMeshAgent>();
+        enemyAnimator = GetComponent<Animator>();
+        enemyAudioPlayer = GetComponent<AudioSource>();
+
+        //렌더러 컴폰넌트는 자식 게임 오브젝트에 있으므로 getcomponentInChildren() 메서드 사용
+        enemyRenderer = GetComponentInChildren<Renderer>();
+
     }
 
     // 적 AI의 초기 스펙을 결정하는 셋업 메서드
     public void Setup(float newHealth, float newDamage, float newSpeed, Color skinColor) {
+        startingHealth = newHealth;
+        health = newHealth;
+        damage = newDamage;
+        pathFinder.speed = newSpeed;
+        enemyRenderer.material.color = skinColor;
     }
 
     private void Start() {
@@ -60,6 +72,33 @@ public class Enemy : LivingEntity {
         // 살아있는 동안 무한 루프
         while (!dead)
         {
+            if (hasTarget)
+            {
+                //추적 대상 존재 : 경로를 갱신하고 AI이동을 계속진행
+                pathFinder.isStopped = false;
+                pathFinder.SetDestination(targetEntity.transform.position);
+            }
+            else
+            {
+                //추적 대상 없음 : AI 이동중지
+                pathFinder.isStopped = true;
+
+                Collider[] colliders = 
+                    Physics.OverlapSphere(transform.position,20f,whatIsTarget);
+
+                for (int i =0; i<colliders.Length;i++ )
+                {
+
+                    LivingEntity livingEntity = colliders[i].GetComponent<LivingEntity>();
+                    //livingEntity 가 notnull 과 죽지않았다면
+                    if (livingEntity != null && !livingEntity.dead)
+                    {
+                        //추적 대상을 해당 livingEntity로 설정
+                        targetEntity = livingEntity;
+                        break;
+                    }
+                }
+            }
             // 0.25초 주기로 처리 반복
             yield return new WaitForSeconds(0.25f);
         }

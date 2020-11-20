@@ -115,6 +115,8 @@ public class Gun : MonoBehaviour {
         gunAudioPlayer.PlayOneShot(shotClip);
         //선의 시작점은 총구의 위치 
         bulletLineRenderer.SetPosition(0,fireTransform.position);
+        //선의 끝점은 입력으로 들어온 충돌 위치
+        bulletLineRenderer.SetPosition(1, hitPosition);
 
         // 라인 렌더러를 활성화하여 총알 궤적을 그린다
         bulletLineRenderer.enabled = true;
@@ -130,6 +132,11 @@ public class Gun : MonoBehaviour {
     public bool Reload() {
         if (state == State.Reloading || ammoRemain <=0 || magAmmo >= magCapacity)
         {
+            Debug.Log("Gun.Relad : reture false");
+            Debug.Log("state : "+state);
+            Debug.Log("ammoRemain : " + ammoRemain);
+            Debug.Log("magAmmo : " + magAmmo);
+            Debug.Log("magCapacity : " + magCapacity);
             //이미 재장전 중이거나 남은 탄알이 없거나 탄창에 탄알이 이미 가능한 경우 재장전 x
             return false;
         }
