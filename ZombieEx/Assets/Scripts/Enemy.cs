@@ -82,7 +82,9 @@ public class Enemy : LivingEntity {
             {
                 //추적 대상 없음 : AI 이동중지
                 pathFinder.isStopped = true;
-
+                //Physics.OverlapSphere (위치,생성할 구의 지름 , 레이어 이름)
+                //구를 만들어서 구에 겹치는 모든 콜라이더를 배열로 반환
+                //모든 콜라이더를 필터링 없이 가져오면 성능낭비가 되므로 레이어 마스크를 입력하여 필터링
                 Collider[] colliders = 
                     Physics.OverlapSphere(transform.position,20f,whatIsTarget);
 
@@ -106,6 +108,15 @@ public class Enemy : LivingEntity {
 
     // 데미지를 입었을때 실행할 처리
     public override void OnDamage(float damage, Vector3 hitPoint, Vector3 hitNormal) {
+        if (!dead)
+        {
+            hitEffect.transform.position = hitPoint;
+            //방향 벡터를 입력받아 해당 방향을 바라보는 쿼터니언 회전값을 반환
+            hitEffect.transform.rotation = Quaternion.LookRotation(hitNormal);
+            hitEffect.Play();
+            enemyAudioPlayer.PlayOneShot(hitSound);
+        }
+
         // LivingEntity의 OnDamage()를 실행하여 데미지 적용
         base.OnDamage(damage, hitPoint, hitNormal);
     }
@@ -114,9 +125,38 @@ public class Enemy : LivingEntity {
     public override void Die() {
         // LivingEntity의 Die()를 실행하여 기본 사망 처리 실행
         base.Die();
+
+        //다른 ai가 방해받지 않도록 모든 collider를 비활성화
+        Collider[] enemyColliders = GetComponents<Collider>();
+        for (int i =0; i < enemyColliders.Length; i++)
+        {
+            enemyColliders[i].enabled = false;
+        }
+
+        pathFinder.isStopped = true;
+        pathFinder.enabled = false;
+
+        enemyAnimator.SetTrigger("Die");
+        enemyAudioPlayer.PlayOneShot(deathSound);
     }
 
     private void OnTriggerStay(Collider other) {
         // 트리거 충돌한 상대방 게임 오브젝트가 추적 대상이라면 공격 실행   
+        if (!dead && Time.time >= lastAttackTime + timeBetAttack)
+        {
+            LivingEntity attackTarget = other.GetComponent<LivingEntity>();
+
+            if (attackTarget != null && attackTarget ==targetEntity)
+            {
+                lastAttackTime = Time.time;
+                //상대방의 피격위치와 피격방향을 근삿값으로 계산
+                //ClosestPoint >> 콜라이더 표면 위의 점중에 특정 위치와 가장 가까운 점을 반환
+                //공격 대상 위치에서 자신의 위치로 향하는 방향
+                Vector3 hitPoint = other.ClosestPoint(transform.position);
+                Vector3 hitNomal = transform.position - other.transform.position;
+                //공격실행
+                attackTarget.OnDamage(damage,hitPoint,hitNomal);
+            }
+        }
     }
 }
