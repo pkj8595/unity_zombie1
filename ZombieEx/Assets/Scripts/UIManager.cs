@@ -47,6 +47,7 @@ public class UIManager : MonoBehaviour {
 
     // 게임 재시작
     public void GameRestart() {
+        Debug.Log("call GameRestart()");
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
 }
